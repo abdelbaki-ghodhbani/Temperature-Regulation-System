@@ -13,6 +13,7 @@ Dialog::Dialog(QWidget *parent) :
 {
     ui->setupUi(this);
     ui->temp_lcdNumber->display("-------");
+    ui->temDesire_Label->setText(QString("<span style=\" font-size:18pt; font-weight:600;\">%1 °C</span>").arg(setpoint));
     arduino = new QSerialPort(this);
     serialBuffer = "";
     parsed_data = "";
@@ -119,25 +120,21 @@ void Dialog::updateTemperature(QString sensor_reading)
 {
     //  update the value displayed on the lcdNumber
      ui->temp_lcdNumber->display(sensor_reading);
-    //  update the value of the motor
-     QString ch = ui->temDesire_Label->text();
-     qDebug()<<ch<<"/n";
-     int tmd = ch.toInt();
-     int tmact = sensor_reading.toInt();
-     double value1 =0;
-     int val;
-     if( (tmact>0)&&(tmact>tmd) ) {
-     value1 = 255*(((-tmact)-tmd)/(-tmact));
-     val =qRound(value1);
-     }
-     else{
-         val = 250;
-         }
+    //  compute the fan command (proportional control, cooling)
+    //  fan is off at or below the setpoint and reaches full speed
+    //  FULL_SPEED_BAND degrees above it
+    double tmact = sensor_reading.toDouble();
+    double error = tmact - setpoint;
+    int val = 0;
+    if (error > 0) {
+        val = qRound(255.0 * error / FULL_SPEED_BAND);
+        if (val > 255) val = 255;
+    }
 
-     QString myString = QString::number(val)+"\n";
-     QByteArray writeData = myString.toUtf8();
+    QString myString = QString::number(val)+"\n";
+    QByteArray writeData = myString.toUtf8();
 
-     //display the value
+    //display the value
      ui->motor_lcdNumber->display(val);
      // set the motor value in arduino
 
@@ -153,7 +150,8 @@ void Dialog::updateTemperature(QString sensor_reading)
 
 void Dialog::on_horizontalSlider_valueChanged(int value)
 {
-    ui->temDesire_Label->setText(QString("<span style=\" font-size:18pt; font-weight:600;\">%1</span>").arg(value));
+    setpoint = value;
+    ui->temDesire_Label->setText(QString("<span style=\" font-size:18pt; font-weight:600;\">%1 °C</span>").arg(value));
    /* Dialog::updateMotorState(parsed_data,value);
     qDebug() << value;*/
 

@@ -35,6 +35,8 @@ private:
     QString serialBuffer;
     QString parsed_data;
     double temperature_value;
+    int setpoint = 25;                 // target temperature from the slider (°C)
+    static constexpr double FULL_SPEED_BAND = 5.0; // °C above setpoint for 100 % fan speed
 };
 
 #endif // DIALOG_H
